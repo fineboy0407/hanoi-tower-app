@@ -10,4 +10,4 @@
 5. Move disc from column 2 to column 1
 6. Move disc from column 2 to column 3
 7. Move disc from column 1 to column 3
-8 Repeat Step 1 until all discs are on column 3
+8. Repeat Step 1 until all discs are on column 3
