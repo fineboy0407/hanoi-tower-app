@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:WpfHanoi"
         mc:Ignorable="d"
         Title="Hanoi" Height="450" Width="800" ResizeMode="NoResize">
-    <Canvas x:Name="HanoiCanvas">
-        <Button Content="Button" Canvas.Left="481" Canvas.Top="181" Background="AliceBlue" BorderThickness="0" Padding="10,4"/>
-
+    <Canvas x:Name="HanoiCanvas" >
     </Canvas>
+
+
 </Window>
