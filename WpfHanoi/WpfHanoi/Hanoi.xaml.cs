@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Threading;
 using System.Windows;
@@ -12,18 +11,6 @@ using WpfHanoi.Model;
 
 namespace WpfHanoi
 {
-    /*
-     * 
-    1. Move disc from column 1 to column 3
-    2. Move disc from column 1 to column 2
-    3. Move disc from column 3 to column 2
-    4. Move disc from column 1 to column 3
-    5. Move disc from column 2 to column 1
-    6. Move disc from column 2 to column 3
-    7. Move disc from column 1 to column 3
-    8. Repeat Step 1 until all discs are on column 3
-     * 
-     */
     public partial class Hanoi : Window
     {
         public List<Disc> ColumnA { get; set; }
@@ -32,7 +19,9 @@ namespace WpfHanoi
         private int _discNumber { get; set; }
 
         private int moves;
-        private int step;
+
+        // [ThreadStatic]
+        public static int SpeedMillis = 500;
 
         private bool autoMode { get; set; }
 
@@ -41,7 +30,6 @@ namespace WpfHanoi
             InitializeComponent();
             _discNumber = discNumber;
             moves = 0;
-            step = 1;
             autoMode = false;
 
             ColumnA = new List<Disc>();
@@ -74,64 +62,44 @@ namespace WpfHanoi
         public void RunAutoAlgorithm(object sender, RoutedEventArgs events)
         {
             autoMode = true;
-
-            var timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromMilliseconds(500);
-            timer.Tick += (e, s) =>
+            
+            ThreadPool.QueueUserWorkItem(o =>
             {
-                Disc disc = null;
-                switch (step)
-                {
-                    case 1:
-                        disc = ColumnA.Last();
-                        ColumnC.Add(disc);
-                        ColumnA.Remove(disc);
-                        break;
-                    case 2:
-                        disc = ColumnA.Last();
-                        ColumnB.Add(disc);
-                        ColumnA.Remove(disc);
-                        break;
-                    case 3:
-                        disc = ColumnC.Last();
-                        ColumnB.Add(disc);
-                        ColumnC.Remove(disc);
-                        break;
-                    case 4:
-                        disc = ColumnA.Last();
-                        ColumnC.Add(disc);
-                        ColumnA.Remove(disc);
-                        break;
-                    case 5:
-                        disc = ColumnB.Last();
-                        ColumnA.Add(disc);
-                        ColumnB.Remove(disc);
-                        break;
-                    case 6:
-                        disc = ColumnB.Last();
-                        ColumnC.Add(disc);
-                        ColumnB.Remove(disc);
-                        break;
-                    default:
-                        step = 1;
-                        break;
-                }
-                ++step;
-                ++moves;
+                var from = ColumnA;
+                var other = ColumnB;
+                var to = ColumnC;
+                var numberOfDiscs = ColumnA.Count;
 
-                if (ColumnA.Count == 0 && ColumnB.Count == 0)
-                {
-                    CheckIfSucess();
-                    timer.Stop();
-                }
-
-                Draw();
-            };
-            timer.Start();
+                AutoMove(numberOfDiscs, from, to, other);
+            });
         }
+
+        public void AutoMove(int numberOfDiscs, List<Disc> from, List<Disc> to, List<Disc> other)
+        {
+            if (numberOfDiscs > 0)
+            {
+                AutoMove(numberOfDiscs - 1, from, other, to);
+
+               Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    var disc = from.Last();
+                    to.Add(disc);
+                    from.Remove(disc);
+                    Draw();
+                    CheckIfSucess();
+                }));
+                Thread.Sleep(SpeedMillis);
+
+
+                ++moves;
+                AutoMove(numberOfDiscs - 1, other, to, from);
+            }
+        }
+
 
         public void CheckIfSucess()
         {
+            Thread.Sleep(400);
             if (ColumnA.Count == 0 && ColumnB.Count == 0)
             {
                 HanoiCanvas.Children.Clear();
@@ -355,6 +323,20 @@ namespace WpfHanoi
                 HanoiCanvas.Children.Add(cToB);
                 CheckIfSucess();
 
+            }
+            else
+            {
+                /* Setup Buttons */
+                var btn = new Button
+                {
+                    Content = "Run Faster",
+                    BorderThickness = new Thickness(0),
+                    Background = Brushes.LightGreen,
+                    Padding = new Thickness(10, 4, 10, 4),
+                    Margin = new Thickness(10)
+                };
+                btn.Click += (e, s) => { SpeedMillis = SpeedMillis / 2; };
+                HanoiCanvas.Children.Add(btn);
             }
 
         }
